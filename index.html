@@ -12,15 +12,26 @@
             background-color: #f0f9ff;
         }
 
-        /* Estilos del Reloj Analógico Principal */
+        /* Estilos del Reloj Analógico Principal - Ahora responsivo */
+        .clock-container {
+            position: relative;
+            width: 100%;
+            max-width: 280px;
+            aspect-ratio: 1 / 1;
+        }
+
         .clock-face {
-            width: 280px;
-            height: 280px;
-            border: 10px solid #4f46e5;
+            width: 100%;
+            height: 100%;
+            border: 8px solid #4f46e5;
             border-radius: 50%;
             position: relative;
             background: white;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (min-width: 640px) {
+            .clock-face { border-width: 12px; }
         }
 
         .number {
@@ -28,10 +39,15 @@
             width: 100%;
             height: 100%;
             text-align: center;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            padding: 12px;
+            padding: 8px;
             color: #1e1b4b;
+            z-index: 5;
+        }
+
+        @media (min-width: 640px) {
+            .number { font-size: 1.4rem; padding: 12px; }
         }
 
         .hand {
@@ -43,24 +59,25 @@
             transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.3, 1);
         }
 
-        .hour-hand { width: 8px; height: 65px; background: #ef4444; margin-left: -4px; z-index: 3; }
-        .minute-hand { width: 6px; height: 100px; background: #3b82f6; margin-left: -3px; z-index: 2; }
-        .second-hand { width: 2px; height: 115px; background: #10b981; margin-left: -1px; z-index: 1; }
+        /* Longitudes ajustadas para escala relativa */
+        .hour-hand { width: 6px; height: 23%; background: #ef4444; margin-left: -3px; z-index: 10; }
+        .minute-hand { width: 4px; height: 35%; background: #3b82f6; margin-left: -2px; z-index: 9; }
+        .second-hand { width: 2px; height: 41%; background: #10b981; margin-left: -1px; z-index: 8; }
 
         .center-dot {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background: #4f46e5;
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            z-index: 10;
+            z-index: 15;
             border: 2px solid white;
         }
 
-        /* Progreso circular */
+        /* Anillos de progreso gruesos - Escalables */
         .progress-ring {
             position: absolute;
             top: 0;
@@ -68,34 +85,40 @@
             width: 100%;
             height: 100%;
             transform: rotate(-90deg);
+            pointer-events: none;
         }
 
         .progress-ring__circle {
             transition: stroke-dashoffset 0.35s;
             transform-origin: 50% 50%;
-            stroke: rgba(59, 130, 246, 0.15);
+            fill: transparent;
         }
 
         /* Mini relojes de referencia */
         .mini-clock {
-            width: 60px;
-            height: 60px;
-            border: 4px solid #e2e8f0;
+            width: 45px;
+            height: 45px;
+            border: 3px solid #e2e8f0;
             border-radius: 50%;
             position: relative;
             background: white;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 640px) {
+            .mini-clock { width: 60px; height: 60px; border-width: 4px; }
         }
 
         .mini-hand {
             position: absolute;
             bottom: 50%;
             left: 50%;
-            width: 3px;
-            height: 24px;
+            width: 2px;
+            height: 40%;
             background: #3b82f6;
             transform-origin: bottom;
             border-radius: 4px;
-            margin-left: -1.5px;
+            margin-left: -1px;
         }
 
         #specialLabel {
@@ -105,81 +128,84 @@
         #specialLabel.show { transform: scale(1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen bg-sky-50 flex flex-col items-center justify-center p-2 sm:p-4">
 
-    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-6 border-4 border-indigo-100">
-        <h1 class="text-2xl font-bold text-center text-indigo-600 mb-2">⏰ Mi Reloj</h1>
+    <div class="w-full max-w-md bg-white rounded-[2rem] shadow-xl p-5 sm:p-6 border-4 border-indigo-100">
+        <h1 class="text-xl sm:text-2xl font-bold text-center text-indigo-600 mb-2">⏰ Mi Reloj</h1>
 
         <!-- Leyenda actual -->
-        <div class="h-10 flex items-center justify-center mb-4">
-            <div id="specialLabel" class="bg-yellow-400 text-yellow-900 font-bold px-4 py-1 rounded-full shadow-sm text-md">
+        <div class="h-10 flex items-center justify-center mb-3">
+            <div id="specialLabel" class="bg-yellow-400 text-yellow-900 font-bold px-4 py-1 rounded-full shadow-sm text-sm sm:text-md">
                 ¡En punto!
             </div>
         </div>
 
         <!-- Reloj Principal -->
         <div class="flex flex-col items-center gap-4">
-            <div class="clock-face" id="analogClock">
-                <svg class="progress-ring" width="280" height="280">
-                    <circle id="minuteProgress" class="progress-ring__circle" stroke-width="18" fill="transparent" r="125" cx="140" cy="140" />
-                </svg>
-                <div class="center-dot"></div>
-                <div id="clockNumbers"></div>
-                <div class="hand hour-hand" id="hourHand"></div>
-                <div class="hand minute-hand" id="minHand"></div>
-                <div class="hand second-hand" id="secHand"></div>
+            <div class="clock-container">
+                <div class="clock-face" id="analogClock">
+                    <!-- SVG responsivo usando viewBox -->
+                    <svg class="progress-ring" viewBox="0 0 280 280">
+                        <!-- Segundos (Verde) -->
+                        <circle id="secondProgress" class="progress-ring__circle" stroke-width="12" r="128" cx="140" cy="140" stroke="rgba(16, 185, 129, 0.25)" />
+                        <!-- Minutos (Azul) -->
+                        <circle id="minuteProgress" class="progress-ring__circle" stroke-width="45" r="100" cx="140" cy="140" stroke="rgba(59, 130, 246, 0.35)" />
+                    </svg>
+                    
+                    <div class="center-dot"></div>
+                    <div id="clockNumbers"></div>
+                    <div class="hand hour-hand" id="hourHand"></div>
+                    <div class="hand minute-hand" id="minHand"></div>
+                    <div class="hand second-hand" id="secHand"></div>
+                </div>
             </div>
 
             <!-- Reloj Digital -->
-            <div class="bg-indigo-50 px-5 py-2 rounded-2xl border-2 border-indigo-200 flex items-baseline text-3xl font-mono font-bold">
+            <div class="bg-indigo-50 px-4 py-2 rounded-2xl border-2 border-indigo-100 flex items-baseline text-2xl sm:text-3xl font-mono font-bold">
                 <span id="digitalHour" class="text-red-500">00</span>
                 <span class="text-indigo-200 mx-1">:</span>
                 <span id="digitalMinute" class="text-blue-500">00</span>
                 <span class="text-indigo-200 mx-1">:</span>
-                <span id="digitalSecond" class="text-emerald-500 text-xl">00</span>
-                <span id="ampm" class="text-lg font-bold text-indigo-400 ml-2 uppercase">am</span>
+                <span id="digitalSecond" class="text-emerald-500 text-lg sm:text-xl">00</span>
+                <span id="ampm" class="text-base sm:text-lg font-bold text-indigo-400 ml-2 uppercase">am</span>
             </div>
 
-            <!-- Visualizador Gráfico de Progreso del Día -->
+            <!-- Progreso del Día -->
             <div class="w-full space-y-1">
-                <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                <div class="flex justify-between text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
                     <span>Amanecer ☀️</span>
                     <span>Noche 🌙</span>
                 </div>
-                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
+                <div class="w-full bg-gray-100 h-2.5 sm:h-3 rounded-full overflow-hidden border border-gray-200">
                     <div id="dayProgress" class="h-full bg-gradient-to-r from-orange-300 via-blue-400 to-indigo-900 transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
 
             <!-- Guía Visual de Referencia -->
-            <div class="w-full mt-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                <p class="text-center text-indigo-900 font-bold text-[10px] uppercase tracking-widest mb-3">Guía de los minutos</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- En punto -->
-                    <div class="flex items-center gap-3">
+            <div class="w-full mt-1 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-100">
+                <p class="text-center text-indigo-900 font-bold text-[9px] sm:text-[10px] uppercase tracking-widest mb-3">Guía de los minutos</p>
+                <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div class="flex items-center gap-2 sm:gap-3">
                         <div class="mini-clock"><div class="mini-hand" style="transform: rotate(0deg)"></div></div>
-                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-green-600 uppercase">En punto</span></div>
+                        <div class="text-[9px] sm:text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-green-600 uppercase">En punto</span></div>
                     </div>
-                    <!-- Y cuarto -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
                         <div class="mini-clock"><div class="mini-hand" style="transform: rotate(90deg)"></div></div>
-                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-blue-600 uppercase">Y cuarto</span></div>
+                        <div class="text-[9px] sm:text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-blue-600 uppercase">Y cuarto</span></div>
                     </div>
-                    <!-- Y media -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
                         <div class="mini-clock"><div class="mini-hand" style="transform: rotate(180deg)"></div></div>
-                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-orange-600 uppercase">Y media</span></div>
+                        <div class="text-[9px] sm:text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-orange-600 uppercase">Y media</span></div>
                     </div>
-                    <!-- Menos cuarto -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
                         <div class="mini-clock"><div class="mini-hand" style="transform: rotate(270deg)"></div></div>
-                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-purple-600 uppercase">Menos cuarto</span></div>
+                        <div class="text-[9px] sm:text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-purple-600 uppercase">Menos cuarto</span></div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <p id="timeDescription" class="text-center text-indigo-400 font-semibold mt-4 text-xs italic">¡Mira cómo corre el tiempo!</p>
+        <p id="timeDescription" class="text-center text-indigo-400 font-semibold mt-4 text-[11px] sm:text-xs italic">¡Mira cómo corre el tiempo!</p>
     </div>
 
     <script>
@@ -190,7 +216,10 @@
         const digitalMinute = document.getElementById('digitalMinute');
         const digitalSecond = document.getElementById('digitalSecond');
         const ampmElement = document.getElementById('ampm');
+        
         const minuteProgressCircle = document.getElementById('minuteProgress');
+        const secondProgressCircle = document.getElementById('secondProgress');
+        
         const dayProgressBar = document.getElementById('dayProgress');
         const timeDescription = document.getElementById('timeDescription');
         const specialLabel = document.getElementById('specialLabel');
@@ -209,9 +238,14 @@
             numbersContainer.appendChild(numDiv);
         }
 
-        const radius = minuteProgressCircle.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
-        minuteProgressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        // Circunferencia para los anillos de progreso
+        const radiusMin = 100; // Valor fijo del atributo 'r' en el SVG
+        const circumferenceMin = radiusMin * 2 * Math.PI;
+        minuteProgressCircle.style.strokeDasharray = `${circumferenceMin} ${circumferenceMin}`;
+
+        const radiusSec = 128; // Valor fijo del atributo 'r' en el SVG
+        const circumferenceSec = radiusSec * 2 * Math.PI;
+        secondProgressCircle.style.strokeDasharray = `${circumferenceSec} ${circumferenceSec}`;
 
         function updateClock() {
             const now = new Date();
@@ -235,9 +269,12 @@
             digitalSecond.textContent = seconds < 10 ? '0' + seconds : seconds;
             ampmElement.textContent = hours >= 12 ? 'pm' : 'am';
 
-            // Círculo de progreso de minutos
-            const offset = circumference - (minutes / 60 * circumference);
-            minuteProgressCircle.style.strokeDashoffset = offset;
+            // Actualizar anillos de progreso
+            const offsetMin = circumferenceMin - (minutes / 60 * circumferenceMin);
+            minuteProgressCircle.style.strokeDashoffset = offsetMin;
+
+            const offsetSec = circumferenceSec - (seconds / 60 * circumferenceSec);
+            secondProgressCircle.style.strokeDashoffset = offsetSec;
 
             // Progreso del día (24 horas)
             const totalSecondsInDay = 24 * 60 * 60;
@@ -249,7 +286,6 @@
         }
 
         function updateLabels(h, m) {
-            // Etiquetas especiales
             if (m === 0) {
                 specialLabel.textContent = "¡En punto!";
                 specialLabel.className = "bg-green-400 text-green-900 font-bold px-4 py-1 rounded-full shadow-sm text-md show";
@@ -266,7 +302,6 @@
                 specialLabel.classList.remove('show');
             }
 
-            // Mensaje de estado
             let desc = "";
             if (h >= 6 && h < 12) desc = "Mañana 🌅 ¡Buen día!";
             else if (h >= 12 && h < 18) desc = "Tarde ☀️ ¡A jugar!";
