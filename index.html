@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Reloj Divertido</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f0f9ff;
+        }
+
+        /* Estilos del Reloj Analógico Principal */
+        .clock-face {
+            width: 280px;
+            height: 280px;
+            border: 10px solid #4f46e5;
+            border-radius: 50%;
+            position: relative;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .number {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            padding: 12px;
+            color: #1e1b4b;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom;
+            border-radius: 10px;
+            transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.3, 1);
+        }
+
+        .hour-hand { width: 8px; height: 65px; background: #ef4444; margin-left: -4px; z-index: 3; }
+        .minute-hand { width: 6px; height: 100px; background: #3b82f6; margin-left: -3px; z-index: 2; }
+        .second-hand { width: 2px; height: 115px; background: #10b981; margin-left: -1px; z-index: 1; }
+
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 14px;
+            background: #4f46e5;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            border: 2px solid white;
+        }
+
+        /* Progreso circular */
+        .progress-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+            stroke: rgba(59, 130, 246, 0.15);
+        }
+
+        /* Mini relojes de referencia */
+        .mini-clock {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e2e8f0;
+            border-radius: 50%;
+            position: relative;
+            background: white;
+        }
+
+        .mini-hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            width: 3px;
+            height: 24px;
+            background: #3b82f6;
+            transform-origin: bottom;
+            border-radius: 4px;
+            margin-left: -1.5px;
+        }
+
+        #specialLabel {
+            transition: all 0.3s ease;
+            transform: scale(0);
+        }
+        #specialLabel.show { transform: scale(1); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-xl p-6 border-4 border-indigo-100">
+        <h1 class="text-2xl font-bold text-center text-indigo-600 mb-2">⏰ Mi Reloj</h1>
+
+        <!-- Leyenda actual -->
+        <div class="h-10 flex items-center justify-center mb-4">
+            <div id="specialLabel" class="bg-yellow-400 text-yellow-900 font-bold px-4 py-1 rounded-full shadow-sm text-md">
+                ¡En punto!
+            </div>
+        </div>
+
+        <!-- Reloj Principal -->
+        <div class="flex flex-col items-center gap-4">
+            <div class="clock-face" id="analogClock">
+                <svg class="progress-ring" width="280" height="280">
+                    <circle id="minuteProgress" class="progress-ring__circle" stroke-width="18" fill="transparent" r="125" cx="140" cy="140" />
+                </svg>
+                <div class="center-dot"></div>
+                <div id="clockNumbers"></div>
+                <div class="hand hour-hand" id="hourHand"></div>
+                <div class="hand minute-hand" id="minHand"></div>
+                <div class="hand second-hand" id="secHand"></div>
+            </div>
+
+            <!-- Reloj Digital -->
+            <div class="bg-indigo-50 px-5 py-2 rounded-2xl border-2 border-indigo-200 flex items-baseline text-3xl font-mono font-bold">
+                <span id="digitalHour" class="text-red-500">00</span>
+                <span class="text-indigo-200 mx-1">:</span>
+                <span id="digitalMinute" class="text-blue-500">00</span>
+                <span class="text-indigo-200 mx-1">:</span>
+                <span id="digitalSecond" class="text-emerald-500 text-xl">00</span>
+                <span id="ampm" class="text-lg font-bold text-indigo-400 ml-2 uppercase">am</span>
+            </div>
+
+            <!-- Visualizador Gráfico de Progreso del Día -->
+            <div class="w-full space-y-1">
+                <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                    <span>Amanecer ☀️</span>
+                    <span>Noche 🌙</span>
+                </div>
+                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden border border-gray-200">
+                    <div id="dayProgress" class="h-full bg-gradient-to-r from-orange-300 via-blue-400 to-indigo-900 transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Guía Visual de Referencia -->
+            <div class="w-full mt-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p class="text-center text-indigo-900 font-bold text-[10px] uppercase tracking-widest mb-3">Guía de los minutos</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- En punto -->
+                    <div class="flex items-center gap-3">
+                        <div class="mini-clock"><div class="mini-hand" style="transform: rotate(0deg)"></div></div>
+                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-green-600 uppercase">En punto</span></div>
+                    </div>
+                    <!-- Y cuarto -->
+                    <div class="flex items-center gap-3">
+                        <div class="mini-clock"><div class="mini-hand" style="transform: rotate(90deg)"></div></div>
+                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-blue-600 uppercase">Y cuarto</span></div>
+                    </div>
+                    <!-- Y media -->
+                    <div class="flex items-center gap-3">
+                        <div class="mini-clock"><div class="mini-hand" style="transform: rotate(180deg)"></div></div>
+                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-orange-600 uppercase">Y media</span></div>
+                    </div>
+                    <!-- Menos cuarto -->
+                    <div class="flex items-center gap-3">
+                        <div class="mini-clock"><div class="mini-hand" style="transform: rotate(270deg)"></div></div>
+                        <div class="text-[10px] font-bold text-slate-600 leading-tight">HORA<br><span class="text-purple-600 uppercase">Menos cuarto</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p id="timeDescription" class="text-center text-indigo-400 font-semibold mt-4 text-xs italic">¡Mira cómo corre el tiempo!</p>
+    </div>
+
+    <script>
+        const hourHand = document.getElementById('hourHand');
+        const minHand = document.getElementById('minHand');
+        const secHand = document.getElementById('secHand');
+        const digitalHour = document.getElementById('digitalHour');
+        const digitalMinute = document.getElementById('digitalMinute');
+        const digitalSecond = document.getElementById('digitalSecond');
+        const ampmElement = document.getElementById('ampm');
+        const minuteProgressCircle = document.getElementById('minuteProgress');
+        const dayProgressBar = document.getElementById('dayProgress');
+        const timeDescription = document.getElementById('timeDescription');
+        const specialLabel = document.getElementById('specialLabel');
+
+        // Configurar números del reloj principal
+        const numbersContainer = document.getElementById('clockNumbers');
+        for (let i = 1; i <= 12; i++) {
+            const numDiv = document.createElement('div');
+            numDiv.className = 'number';
+            numDiv.style.transform = `rotate(${i * 30}deg)`;
+            const span = document.createElement('span');
+            span.textContent = i;
+            span.style.display = 'block';
+            span.style.transform = `rotate(-${i * 30}deg)`;
+            numDiv.appendChild(span);
+            numbersContainer.appendChild(numDiv);
+        }
+
+        const radius = minuteProgressCircle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        minuteProgressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+        function updateClock() {
+            const now = new Date();
+            const seconds = now.getSeconds();
+            const minutes = now.getMinutes();
+            const hours = now.getHours();
+
+            // Rotaciones analógicas
+            const secDeg = (seconds / 60) * 360;
+            const minDeg = (minutes / 60) * 360 + (seconds / 60) * 6;
+            const hourDeg = (hours % 12 / 12) * 360 + (minutes / 60) * 30;
+
+            secHand.style.transform = `rotate(${secDeg}deg)`;
+            minHand.style.transform = `rotate(${minDeg}deg)`;
+            hourHand.style.transform = `rotate(${hourDeg}deg)`;
+
+            // Digital sincronizado
+            const hDisplay = hours % 12 || 12;
+            digitalHour.textContent = hDisplay < 10 ? '0' + hDisplay : hDisplay;
+            digitalMinute.textContent = minutes < 10 ? '0' + minutes : minutes;
+            digitalSecond.textContent = seconds < 10 ? '0' + seconds : seconds;
+            ampmElement.textContent = hours >= 12 ? 'pm' : 'am';
+
+            // Círculo de progreso de minutos
+            const offset = circumference - (minutes / 60 * circumference);
+            minuteProgressCircle.style.strokeDashoffset = offset;
+
+            // Progreso del día (24 horas)
+            const totalSecondsInDay = 24 * 60 * 60;
+            const currentSeconds = (hours * 3600) + (minutes * 60) + seconds;
+            const dayPercent = (currentSeconds / totalSecondsInDay) * 100;
+            dayProgressBar.style.width = `${dayPercent}%`;
+
+            updateLabels(hours, minutes);
+        }
+
+        function updateLabels(h, m) {
+            // Etiquetas especiales
+            if (m === 0) {
+                specialLabel.textContent = "¡En punto!";
+                specialLabel.className = "bg-green-400 text-green-900 font-bold px-4 py-1 rounded-full shadow-sm text-md show";
+            } else if (m === 15) {
+                specialLabel.textContent = "¡Y cuarto!";
+                specialLabel.className = "bg-blue-400 text-blue-900 font-bold px-4 py-1 rounded-full shadow-sm text-md show";
+            } else if (m === 30) {
+                specialLabel.textContent = "¡Y media!";
+                specialLabel.className = "bg-orange-400 text-orange-900 font-bold px-4 py-1 rounded-full shadow-sm text-md show";
+            } else if (m === 45) {
+                specialLabel.textContent = "¡Menos cuarto!";
+                specialLabel.className = "bg-purple-400 text-purple-900 font-bold px-4 py-1 rounded-full shadow-sm text-md show";
+            } else {
+                specialLabel.classList.remove('show');
+            }
+
+            // Mensaje de estado
+            let desc = "";
+            if (h >= 6 && h < 12) desc = "Mañana 🌅 ¡Buen día!";
+            else if (h >= 12 && h < 18) desc = "Tarde ☀️ ¡A jugar!";
+            else desc = "Noche 🌙 A descansar...";
+            timeDescription.textContent = desc;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>
